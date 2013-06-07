@@ -24,7 +24,7 @@ class Gantti {
       'today'      => true,
     );
         
-    $this->options = array_merge($defaults, $params);    
+    $this->options = array_merge($defaults, $params);
     $this->cal     = new Calendar();
     $this->data    = $data;
     $this->seconds = 60*60*24;
@@ -32,7 +32,7 @@ class Gantti {
     $this->cellstyle = 'style="width: ' . $this->options['cellwidth'] . 'px; height: ' . $this->options['cellheight'] . 'px"';
     
     // parse data and find first and last date  
-    $this->parse();                
+    $this->parse();
                     
   }
 
@@ -49,7 +49,7 @@ class Gantti {
       
       if(!$this->first || $this->first > $start) $this->first = $start;
       if(!$this->last  || $this->last  < $end)   $this->last  = $end;
-          
+
     }
     
     $this->first = $this->cal->date($this->first);
@@ -90,7 +90,7 @@ class Gantti {
     $html[] = '<aside>';
     $html[] = '<ul class="gantt-labels" style="margin-top: ' . (($this->options['cellheight']*2)+1) . 'px">';
     foreach($this->blocks as $i => $block) {
-      $html[] = '<li class="gantt-label"><strong ' . $cellstyle . '>' . $block['label'] . '</strong></li>';      
+      $html[] = '<li class="gantt-label"><strong ' . $cellstyle . '>' . $block['label'] . '</strong></li>';
     }
     $html[] = '</ul>';
     $html[] = '</aside>';
