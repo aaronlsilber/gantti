@@ -21,6 +21,8 @@ class Gantti {
       'title'      => false,
       'cellwidth'  => 50,
       'cellheight' => 40,
+      'open_hour'	 => 8,
+      'close_hour' => 18,
       'today'      => true,
 		);
 
@@ -33,8 +35,6 @@ class Gantti {
 
 		// parse data and find first and last date
 		$this->parse();
-
-		krumo($this);
 	}
 
 	function parse() {
@@ -55,6 +55,8 @@ class Gantti {
 
 		}
 
+		krumo($this->blocks);
+
 		$this->first = $this->cal->date($this->first);
 		$this->last  = $this->cal->date($this->last);
 
@@ -69,6 +71,10 @@ class Gantti {
 				$this->days[] = $day;
 			}
 			$current = $current->next();
+		}
+
+		for ($i = $this->options['open_hour']; $i < $this->options['close_hour']; $i++) { 
+			$this->hours[] = $i;
 		}
 
 	}
@@ -121,23 +127,33 @@ class Gantti {
 		// data header section
 		$html[] = '<header>';
 
-		// months headers
-		$html[] = '<ul class="gantt-months" ' . $totalstyle . '>';
-		foreach($this->months as $month) {
-			$html[] = '<li class="gantt-month" style="width: ' . ($this->options['cellwidth'] * $month->countDays()) . 'px"><strong ' . $cellstyle . '>' . $month->name() . '</strong></li>';
-		}
-		$html[] = '</ul>';
+			// months headers
+			$html[] = '<ul class="gantt-months" ' . $totalstyle . '>';
+			foreach($this->months as $month) {
+				$html[] = '<li class="gantt-month" style="width: ' . ($this->options['cellwidth'] * $month->countDays()) . 'px"><strong ' . $cellstyle . '>' . $month->name() . '</strong></li>';
+			}
+			$html[] = '</ul>';
 
-		// days headers
-		$html[] = '<ul class="gantt-days" ' . $totalstyle . '>';
-		foreach($this->days as $day) {
+			// days headers
+			$html[] = '<ul class="gantt-days" ' . $totalstyle . '>';
+			foreach($this->days as $day) {
 
-			$weekend = ($day->isWeekend()) ? ' weekend' : '';
-			$today   = ($day->isToday())   ? ' today' : '';
+				$weekend = ($day->isWeekend()) ? ' weekend' : '';
+				$today   = ($day->isToday())   ? ' today' : '';
 
-			$html[] = '<li class="gantt-day' . $weekend . $today . '" ' . $wrapstyle . '><span ' . $cellstyle . '>' . $day->padded() . '</span></li>';
-		}
-		$html[] = '</ul>';
+				$html[] = '<li class="gantt-day' . $weekend . $today . '" ' . $wrapstyle . '><span ' . $cellstyle . '>' . $day->padded() . '</span></li>';
+			}
+			$html[] = '</ul>';
+
+			// hour headers
+			$html[] = '<ul class="gantt-hours" ' . $totalstyle . '>';
+			for ($i = $this->options['open_hour'] - 2; $i <= $this->options['close_hour'] + 2; $i++) {
+
+				$closed = ($i < $this->options['open_hour'] || $i > $this->options['close_hour']) ? ' closed' : '';
+
+				$html[] = '<li class="gantt-hour' . $closed . '" ' . $wrapstyle . '><span ' . $cellstyle . '>' . $i . '</span></li>';
+			}
+			$html[] = '</ul>';
 
 		// end header
 		$html[] = '</header>';

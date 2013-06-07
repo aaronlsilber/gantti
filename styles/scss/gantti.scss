@@ -106,6 +106,33 @@ $aside-width: 200px;
   border-right:  1px solid $color-lines;
   border-bottom: 1px solid $color-lines;
 }
+
+  .gantt header .gantt-hours {
+    overflow: hidden;
+  }
+  .gantt header .gantt-hour {
+    float: left;
+    text-align: center;
+  }
+  .gantt header .gantt-hour strong {
+    display: block;
+    border-right:  1px solid $color-lines;
+    border-bottom: 1px solid $color-lines;
+  }
+
+  .gantt-hour.closed {
+    background: $color-background-light;
+  }
+
+  .gantt header .gantt-hour span {
+    text-indent: 0;
+    text-align: center;
+  }
+  .gantt header .gantt-hour.today span {
+    color: $color-text-today;
+  }
+
+
 .gantt header .gantt-day span {
   text-indent: 0;
   text-align: center;
@@ -124,11 +151,13 @@ $aside-width: 200px;
 .gantt-day {
   float: left;
 }
-.gantt-day span {
-  display: block;
-  border-right:  1px solid $color-lines;
-  border-bottom: 1px solid $color-lines;
-  text-indent: -12000px;
+.gantt-day, .gantt-hour {
+  span {
+    display: block;
+    border-right:  1px solid $color-lines;
+    border-bottom: 1px solid $color-lines;
+    text-indent: -12000px;
+  }
 }
 .gantt-day.weekend span {
   background: $color-background-light;
