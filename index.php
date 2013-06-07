@@ -9,7 +9,7 @@ setlocale(LC_ALL, 'en_US');
 
 $gantti = new Gantti($data, array(
   'title'      => date('n/d/Y'),
-  'cellwidth'  => 25,
+  'cellwidth'  => 50,
   'cellheight' => 35,
   'today'      => true
 ));

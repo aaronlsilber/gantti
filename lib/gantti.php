@@ -19,7 +19,7 @@ class Gantti {
 
 		$defaults = array(
       'title'      => false,
-      'cellwidth'  => 40,
+      'cellwidth'  => 50,
       'cellheight' => 40,
       'today'      => true,
 		);
@@ -34,6 +34,7 @@ class Gantti {
 		// parse data and find first and last date
 		$this->parse();
 
+		krumo($this);
 	}
 
 	function parse() {
@@ -41,10 +42,12 @@ class Gantti {
 		foreach($this->data as $d) {
 
 			$this->blocks[] = array(
-        'label' => $d['label'],
-        'start' => $start = strtotime($d['start']),
-        'end'   => $end   = strtotime($d['end']),
-        'class' => @$d['class']
+        'label' 	=> $d['label'],
+        'tech_id'	=> $d['tech_id'],
+        'appt_id'	=> $d['appt_id'],
+        'start' 	=> $start = $d['start'],
+        'end'   	=> $end   = $d['end'],
+        'class' 	=> @$d['class']
 			);
 
 			if(!$this->first || $this->first > $start) $this->first = $start;
@@ -144,14 +147,16 @@ class Gantti {
 
 		$firstTimeEnter=true;
 		$rememberLastId="";
+
 		foreach($this->blocks as $i => $block) {
 
-			if($firstTimeEnter==true){
+			if($firstTimeEnter==true) {
 					
 				$html[] = '<li class="gantt-item">';
 
 				// days
 				$html[] = '<ul class="gantt-days">';
+
 				foreach($this->days as $day) {
 
 					$weekend = ($day->isWeekend()) ? ' weekend' : '';
@@ -159,6 +164,7 @@ class Gantti {
 
 					$html[] = '<li class="gantt-day' . $weekend . $today . '" ' . $wrapstyle . '><span ' . $cellstyle . '>' . $day . '</span></li>';
 				}
+
 				$html[] = '</ul>';
 
 				// the block
@@ -173,7 +179,9 @@ class Gantti {
 					
 				$firstTimeEnter=false;
 				$rememberLastId=$block['label'];
-			}else if($rememberLastId!=$block['label']){
+
+			} else if ($rememberLastId!=$block['label']){
+
 				$html[] = '</li>';
 				
 				$html[] = '<li class="gantt-item">';
@@ -202,7 +210,7 @@ class Gantti {
 				$rememberLastId=$block['label'];
 				
 
-			}else if($rememberLastId==$block['label']){
+			} else if( $rememberLastId==$block['label']){
 				
 				$days   = (($block['end'] - $block['start']) / $this->seconds);
 				$offset = (($block['start'] - $this->first->month()->timestamp) / $this->seconds);
