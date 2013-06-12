@@ -19,17 +19,23 @@ class Gantti {
 
 		$defaults = array(
       'title'      => false,
+		  'sort_field' => 'first_name',
+		  'sort_order' => 'SORT_DESC', // Use PHP sort flag constants
       'cellwidth'  => 50,
       'cellheight' => 40,
-      'open_hour'	 => 8,
+      'open_hour'	 => 6,
       'close_hour' => 18,
+      'preHours' 	 => 2,
+      'sufHours' 	 => 2,
       'today'      => true,
 		);
+
+		date_default_timezone_set('America/New_York'); // @TODO: set this timezone from DB
 
 		$this->options = array_merge($defaults, $params);
 		$this->cal     = new Calendar();
 		$this->data    = $data;
-		$this->seconds = 60*60*24;
+		$this->seconds = 60*60;
 
 		$this->cellstyle = 'style="width: ' . $this->options['cellwidth'] . 'px; height: ' . $this->options['cellheight'] . 'px"';
 
@@ -39,44 +45,139 @@ class Gantti {
 
 	function parse() {
 
+		// Sort data
+		foreach ($this->data as $key => $row) {
+			$sort_field[$key] = $row[ $this->options['sort_field'] ];
+		}
+		array_multisort($sort_field, constant($this->options['sort_order']), $this->data);
+		// End sorting
+
 		foreach($this->data as $d) {
 
+			// Alter the format of the label by field
+			switch ($this->options['sort_field']) {
+				case 'first_name':
+					$label = $d['first_name'] . ' ' . $d['last_name'];
+					break;
+
+				case 'last_name':
+					$label = $d['last_name'] . ', ' . $d['first_name'];
+					break;
+				
+				default:
+					$label = $d[ $this->options['sort_field'] ];
+					break;
+			}
+
 			$this->blocks[] = array(
-        'label' 	=> $d['label'],
-        'tech_id'	=> $d['tech_id'],
-        'appt_id'	=> $d['appt_id'],
-        'start' 	=> $start = $d['start'],
-        'end'   	=> $end   = $d['end'],
-        'class' 	=> @$d['class']
+        'label' 				=> $label,
+        'tech_id'				=> $d['tech_id'],
+        'type'    			=> $d['type'],
+        'appt_id'				=> @$d['appt_id'],
+        'customer_name' => @$d['customer_name'],
+        'first_name'		=> $d['first_name'],
+        'last_name'			=> $d['last_name'],
+        'start' 				=> @$start = $d['start'],
+        'end'   				=> @$end   = $d['end'],
+        'class' 				=> @$d['class']
 			);
 
-			if(!$this->first || $this->first > $start) $this->first = $start;
-			if(!$this->last  || $this->last  < $end)   $this->last  = $end;
-
 		}
 
-		krumo($this->blocks);
-
-		$this->first = $this->cal->date($this->first);
-		$this->last  = $this->cal->date($this->last);
-
-		$current = $this->first->month();
-		$lastDay = $this->last->month()->lastDay()->timestamp;
-
-		// build the months
-		while($current->lastDay()->timestamp <= $lastDay) {
-			$month = $current->month();
-			$this->months[] = $month;
-			foreach($month->days() as $day) {
-				$this->days[] = $day;
-			}
-			$current = $current->next();
-		}
-
-		for ($i = $this->options['open_hour']; $i < $this->options['close_hour']; $i++) { 
+		// build the hours
+		for ($i = $this->options['open_hour']; $i <= $this->options['close_hour']; $i++) { 
 			$this->hours[] = $i;
 		}
 
+	}
+
+	function getBlock($i, $block) {
+
+		// Dont run if this block is a placeholder ('empty')
+		if ( $block['type'] != 'empty' ) {
+
+			$block_hrs_past = date('G', $block['start']) + (date('i', $block['start'])/60);
+			$offset = $block_hrs_past - ($this->options['open_hour'] - $this->options['preHours']);
+			$top    = round($i * ($this->options['cellheight'] + 1));
+			$left   = round($offset * $this->options['cellwidth']);
+			$width  = (($block['end'] - $block['start']) / 60 / 60) * $this->options['cellwidth']-1;
+
+			if ( $block['type'] == 'break' ) {
+				$height = round($this->options['cellheight']);
+			} else {
+				$height = round($this->options['cellheight']-8);
+			}
+
+			$class  = ($block['class']) ? ' ' . $block['class'] : '';
+			$class .= ' ' . $block['type'];
+
+			$style = '';
+
+			switch ($block['type']) {
+				case 'break':
+					$label = 'Break';
+					$style = 'line-height: ' . $this->options['cellheight'] . 'px;';
+					break;
+
+				case 'appointment':
+					$label  = '<div class="field--times">';
+					$label .= date('g:ia', $block['start']) . ' &rarr; ' . date('g:ia', $block['end']);
+					$label .= '</div>';
+
+					$label .= '<div class="field--customer">';
+					$label .= $block['customer_name'];
+					$label .= '</div>';
+					break;
+				
+				default:
+					$label = '';
+					break;
+			}
+
+			$data_attr = array();
+			$data_attr[] = 'data-apptid="' . $block['appt_id'] . '"';
+			$data_attr = implode(' ', $data_attr);
+
+			$output  = '<span ' . $data_attr . ' class="gantt-block' . $class . '" style="left: ' . $left . 'px; width: ' . $width . 'px; height: ' . $height . 'px">';
+				if ($block['type'] == 'appointment')
+				$output .= '<a href="/appointments/update_appointment/' . $block['appt_id'] . '">';
+
+				$output .= '<strong class="gantt-block-label" style="' . $style . '">' . $label . '</strong>';
+
+				if ($block['type'] == 'appointment')
+				$output .= '</a>';
+			$output .= '</span>';
+
+			return $output;
+		}
+	}
+
+	function getDays($wrapstyle, $cellstyle, $block) {
+		$html = array();
+
+		$html[] = '<ul class="gantt-hours">';
+		for( $i = $this->options['open_hour'] - $this->options['preHours']; $i <= $this->options['close_hour'] + $this->options['sufHours']; $i++ ) {
+			$closed = ($i < $this->options['open_hour'] || $i > $this->options['close_hour']) ? ' closed' : '';
+
+			$appt_time = strtotime($i . ':00');
+
+			$data_attr = array();
+			// Creates a timestamp for this hour so our front-end understands this
+			$data_attr[] = 'data-time="' . $appt_time . '"';
+			$data_attr[] = 'data-techid="' . $block['tech_id'] . '"';
+			$data_attr = implode(' ', $data_attr);
+
+			$html[] = '<li ' . $data_attr . 'class="gantt-hour' . $closed . '" ' . $wrapstyle . '>';
+			$html[] = '<a href="/create_appointment/' . $appt_time . '/' . $block['tech_id'] . '">';
+			$html[] = '<span ' . $cellstyle . '>';
+			$html[] = '+';
+			$html[] = '</span>';
+			$html[] = '</a>';
+			$html[] = '</li>';
+		}
+		$html[] = '</ul>';
+
+		return implode('', $html);
 	}
 
 	function render() {
@@ -86,178 +187,112 @@ class Gantti {
 		// common styles
 		$cellstyle  = 'style="line-height: ' . $this->options['cellheight'] . 'px; height: ' . $this->options['cellheight'] . 'px"';
 		$wrapstyle  = 'style="width: ' . $this->options['cellwidth'] . 'px"';
-		$totalstyle = 'style="width: ' . (count($this->days)*$this->options['cellwidth']) . 'px"';
+		$totalstyle = 'style="width: ' . ((count($this->hours) + $this->options['preHours'] + $this->options['sufHours'])* $this->options['cellwidth']) . 'px"';
+		
 		// start the diagram
 		$html[] = '<figure class="gantt">';
 
-		// set a title if available
-		if($this->options['title']) {
-			$html[] = '<figcaption>' . $this->options['title'] . '</figcaption>';
-		}
+			// sidebar with labels
+			$html[] = '<aside>';
+				$html[] = '<ul class="gantt-labels" style="margin-top: ' . ($this->options['cellheight']*1) . 'px">';
 
-		// sidebar with labels
-		$html[] = '<aside>';
-		$html[] = '<ul class="gantt-labels" style="margin-top: ' . (($this->options['cellheight']*2)+1) . 'px">';
-
-		$firstTimeEnter = true;
-		$rememberLastId;
-		
-		foreach($this->blocks as $i => $block) {
-
-			if($firstTimeEnter)	{
-				$html[] = '<li class="gantt-label"><strong ' . $cellstyle . '>' . $block['label'] . '</strong></li>';
-
-				$firstTimeEnter=false;
-				$rememberLastId=$block['label'];
-			}
-			else
-			if ($rememberLastId != $block['label']) {
-				$html[] = '<li class="gantt-label"><strong ' . $cellstyle . '>' . $block['label'] . '</strong></li>';
-
-				$rememberLastId=$block['label'];
-			}
-		}
-
-		$html[] = '</ul>';
-		$html[] = '</aside>';
-
-		// data section
-		$html[] = '<section class="gantt-data">';
-
-		// data header section
-		$html[] = '<header>';
-
-			// months headers
-			$html[] = '<ul class="gantt-months" ' . $totalstyle . '>';
-			foreach($this->months as $month) {
-				$html[] = '<li class="gantt-month" style="width: ' . ($this->options['cellwidth'] * $month->countDays()) . 'px"><strong ' . $cellstyle . '>' . $month->name() . '</strong></li>';
-			}
-			$html[] = '</ul>';
-
-			// days headers
-			$html[] = '<ul class="gantt-days" ' . $totalstyle . '>';
-			foreach($this->days as $day) {
-
-				$weekend = ($day->isWeekend()) ? ' weekend' : '';
-				$today   = ($day->isToday())   ? ' today' : '';
-
-				$html[] = '<li class="gantt-day' . $weekend . $today . '" ' . $wrapstyle . '><span ' . $cellstyle . '>' . $day->padded() . '</span></li>';
-			}
-			$html[] = '</ul>';
-
-			// hour headers
-			$html[] = '<ul class="gantt-hours" ' . $totalstyle . '>';
-			for ($i = $this->options['open_hour'] - 2; $i <= $this->options['close_hour'] + 2; $i++) {
-
-				$closed = ($i < $this->options['open_hour'] || $i > $this->options['close_hour']) ? ' closed' : '';
-
-				$html[] = '<li class="gantt-hour' . $closed . '" ' . $wrapstyle . '><span ' . $cellstyle . '>' . $i . '</span></li>';
-			}
-			$html[] = '</ul>';
-
-		// end header
-		$html[] = '</header>';
-
-		// main items
-		$html[] = '<ul class="gantt-items" ' . $totalstyle . '>';
-
-		$firstTimeEnter=true;
-		$rememberLastId="";
-
-		foreach($this->blocks as $i => $block) {
-
-			if($firstTimeEnter==true) {
+					$firstTimeEnter = true;
+					$rememberLastId;
 					
-				$html[] = '<li class="gantt-item">';
+					foreach($this->blocks as $i => $block) {
 
-				// days
-				$html[] = '<ul class="gantt-days">';
+						if($firstTimeEnter)	{
 
-				foreach($this->days as $day) {
+							$html[] = '<li class="gantt-label"><strong ' . $cellstyle . '>' . $block['label'] . '</strong></li>';
 
-					$weekend = ($day->isWeekend()) ? ' weekend' : '';
-					$today   = ($day->isToday())   ? ' today' : '';
+							$firstTimeEnter = false;
+							$rememberLastId = $block['label'];
 
-					$html[] = '<li class="gantt-day' . $weekend . $today . '" ' . $wrapstyle . '><span ' . $cellstyle . '>' . $day . '</span></li>';
+						} else if ($rememberLastId != $block['label']) {
+
+							$html[] = '<li class="gantt-label"><strong ' . $cellstyle . '>' . $block['label'] . '</strong></li>';
+
+							$rememberLastId=$block['label'];
+						}
+					}
+
+				$html[] = '</ul>';
+			$html[] = '</aside>';
+
+
+			// data section
+			$html[] = '<section class="gantt-data">';
+
+				// data header section
+				$html[] = '<header>';
+					// hour headers
+					$html[] = '<ul class="gantt-hours" ' . $totalstyle . '>';
+
+						for ($i = $this->options['open_hour'] - $this->options['preHours']; $i <= $this->options['close_hour'] + $this->options['sufHours']; $i++) {
+							$closed = ($i < $this->options['open_hour'] || $i > $this->options['close_hour']) ? ' closed' : '';
+							$hour = $i > 12 ? $i - 12 : $i;
+							$html[] = '<li class="gantt-hour' . $closed . '" ' . $wrapstyle . '><span ' . $cellstyle . '>' . $hour . '</span></li>';
+						}
+
+					$html[] = '</ul>';
+				// end header
+				$html[] = '</header>';
+
+				// main items
+				$html[] = '<ul class="gantt-items" ' . $totalstyle . '>';
+
+				$firstTimeEnter = true;
+				$rememberLastId = "";
+
+				foreach($this->blocks as $i => $block) {
+
+					if( $firstTimeEnter == true ) {
+							
+						$html[] = '<li class="gantt-item">';
+							$html[] = $this->getDays($wrapstyle, $cellstyle, $block); // days
+							$html[] = $this->getBlock($i, $block); // event block
+						$firstTimeEnter = false;
+						$rememberLastId = $block['label'];
+
+					} else if ( $rememberLastId != $block['label'] ){
+
+						$html[] = '</li>';
+						
+						$html[] = '<li class="gantt-item">';
+							$html[] = $this->getDays($wrapstyle, $cellstyle, $block); // days
+							$html[] = $this->getBlock($i, $block); // event block
+						$rememberLastId = $block['label'];
+
+					} else if ( $rememberLastId == $block['label'] ){
+						
+						$html[] = $this->getBlock($i, $block); // the block 
+						
+					}
+
 				}
 
 				$html[] = '</ul>';
 
-				// the block
-				$days   = (($block['end'] - $block['start']) / $this->seconds);
-				$offset = (($block['start'] - $this->first->month()->timestamp) / $this->seconds);
-				$top    = round($i * ($this->options['cellheight'] + 1));
-				$left   = round($offset * $this->options['cellwidth']);
-				$width  = round($days * $this->options['cellwidth'] - 9);
-				$height = round($this->options['cellheight']-8);
-				$class  = ($block['class']) ? ' ' . $block['class'] : '';
-				$html[] = '<span class="gantt-block' . $class . '" style="left: ' . $left . 'px; width: ' . $width . 'px; height: ' . $height . 'px"><strong class="gantt-block-label">' . $days . '</strong></span>';
-					
-				$firstTimeEnter=false;
-				$rememberLastId=$block['label'];
+				if( $this -> options['today'] ) {
 
-			} else if ($rememberLastId!=$block['label']){
+					// now
+					$now = time();
+					$now_hrs = intval( date('G', $now) );
+					$now_min = intval( date('i', $now) );
 
-				$html[] = '</li>';
-				
-				$html[] = '<li class="gantt-item">';
+					// hours past in the current day (float)
+					// ex: 2:35pm would equal 14.5833
+					$day_hrs_past = $now_hrs + $now_min / 60;
 
-				// days
-				$html[] = '<ul class="gantt-days">';
-				foreach($this->days as $day) {
+					$offset = $day_hrs_past - ($this->options['open_hour'] - $this->options['preHours']);
+					$left   = round($offset * $this->options['cellwidth']);
 
-					$weekend = ($day->isWeekend()) ? ' weekend' : '';
-					$today   = ($day->isToday())   ? ' today' : '';
+				  $html[] = '<time style="top: ' . ($this->options['cellheight'] * 1) . 'px; left: ' . $left . 'px" datetime="' . date('G:i', $now) . '">Now</time>';
 
-					$html[] = '<li class="gantt-day' . $weekend . $today . '" ' . $wrapstyle . '><span ' . $cellstyle . '>' . $day . '</span></li>';
 				}
-				$html[] = '</ul>';
 
-				// the block
-				$days   = (($block['end'] - $block['start']) / $this->seconds);
-				$offset = (($block['start'] - $this->first->month()->timestamp) / $this->seconds);
-				$top    = round($i * ($this->options['cellheight'] + 1));
-				$left   = round($offset * $this->options['cellwidth']);
-				$width  = round($days * $this->options['cellwidth'] - 9);
-				$height = round($this->options['cellheight']-8);
-				$class  = ($block['class']) ? ' ' . $block['class'] : '';
-				$html[] = '<span class="gantt-block' . $class . '" style="left: ' . $left . 'px; width: ' . $width . 'px; height: ' . $height . 'px"><strong class="gantt-block-label">' . $days . '</strong></span>';
-					
-				$rememberLastId=$block['label'];
-				
-
-			} else if( $rememberLastId==$block['label']){
-				
-				$days   = (($block['end'] - $block['start']) / $this->seconds);
-				$offset = (($block['start'] - $this->first->month()->timestamp) / $this->seconds);
-				$top    = round($i * ($this->options['cellheight'] + 1));
-				$left   = round($offset * $this->options['cellwidth']);
-				$width  = round($days * $this->options['cellwidth'] - 9);
-				$height = round($this->options['cellheight']-8);
-				$class  = ($block['class']) ? ' ' . $block['class'] : '';
-				$html[] = '<span class="gantt-block' . $class . '" style="left: ' . $left . 'px; width: ' . $width . 'px; height: ' . $height . 'px"><strong class="gantt-block-label">' . $days . '</strong></span>';
-				
-			}
-
-		}
-
-		$html[] = '</ul>';
-
-		if($this->options['today']) {
-
-			// today
-			$today  = $this->cal->today();
-			$offset = (($today->timestamp - $this->first->month()->timestamp) / $this->seconds);
-			$left   = round($offset * $this->options['cellwidth']) + round(($this->options['cellwidth'] / 2) - 1);
-
-			if($today->timestamp > $this->first->month()->firstDay()->timestamp && $today->timestamp < $this->last->month()->lastDay()->timestamp) {
-				$html[] = '<time style="top: ' . ($this->options['cellheight'] * 2) . 'px; left: ' . $left . 'px" datetime="' . $today->format('Y-m-d') . '">Today</time>';
-			}
-
-		}
-
-		// end data section
-		$html[] = '</section>';
+			// end data section
+			$html[] = '</section>';
 
 		// end diagram
 		$html[] = '</figure>';
@@ -267,7 +302,7 @@ class Gantti {
 	}
 
 
- function __toString() {
-    return $this->render();
+  function __toString() {
+  	return $this->render();
   }
 }

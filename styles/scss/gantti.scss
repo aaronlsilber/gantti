@@ -1,13 +1,13 @@
 /* Sass Variables */
 
-$color-background-dark:  #002b36;
-$color-background-light: #073642;
+$color-background-dark:  #fff;
+$color-background-light: #ccc;
 
-$color-lines:            darken($color-background-dark, 3%);
-$color-today:            #fff;
+$color-lines:            #d5d5d5;
+$color-today:            #3c3a36;
 
 $color-text:             #93a1a1;
-$color-text-today:       #fff;
+$color-text-today:       #3c3a36;
 $color-text-label-aside: $color-text;
 $color-text-label-block: #fff;
 $color-text-title:       #fff;
@@ -21,218 +21,283 @@ $color-scrollbar-thumb:  #93a1a1;
 
 $aside-width: 200px;
 
+/* scrollbar styles */
+
+  .gantt ::-webkit-scrollbar {    
+    background: $color-scrollbar-back;
+    height: 10px;
+  }
+  .gantt ::-webkit-scrollbar-thumb {
+    background: $color-scrollbar-thumb;
+    -webkit-box-shadow: rgba(255,255,255, .1) 0 1px 0 inset;
+       -moz-box-shadow: rgba(255,255,255, .1) 0 1px 0 inset;
+            box-shadow: rgba(255,255,255, .1) 0 1px 0 inset;
+  }
+
+  /* selection styles */
+  .gantt ::-moz-selection {
+    background: #fff;
+    color: #000;
+  }
+  .gantt ::selection {
+    background: #fff;
+    color: #000;
+  }
+
 /* gantt styles */
-.gantt {
-  position: relative;
-  overflow: hidden;  
-  color: $color-text;
-  background: $color-background-dark;
-}
-.gantt * {
-  font-weight: normal;
-  margin: 0;
-  padding: 0;  
-}
-.gantt li {
-  list-style: none;
-}
 
-/* optional title */
-.gantt figcaption {
-  position: absolute;
-  top: 25px;
-  left: 20px;
-  font-size: 20px;
-  color: $color-text-title;
-  text-transform: uppercase;
-  letter-spacing: 4px;
-}
+  .gantt {
+    position: relative;
+    overflow: hidden;  
+    color: $color-text;
+    background: $color-background-dark;
 
-/* sidebar */
-.gantt aside {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  top: 0;
-  width: $aside-width - 1;
-  border-right: 1px solid darken($color-lines, 2%);
-  z-index: 2;
-}
-.gantt aside:before {
-  position: absolute;
-  right: -7px;
-  pointer-events: none;
-  width: 7px;
-  top: 0;
-  bottom: 0;
-  content: "";
-  border-left: 1px solid rgba(255,255,255, .03);
-  background: -webkit-linear-gradient(left, rgba($color-background-dark,.7), rgba($color-background-dark,0));
-     background: -moz-linear-gradient(left, rgba($color-background-dark,.7), rgba($color-background-dark,0));
-          background: linear-gradient(left, rgba($color-background-dark,.7), rgba($color-background-dark,0));
-  z-index: 3;
-}
-.gantt aside .gantt-labels {
-  border-top: 1px solid $color-lines;
-}
-.gantt aside .gantt-label strong {
-  display: block;
-  padding: 0 20px;
-  color: $color-text-label-aside;
-  border-bottom: 1px solid $color-lines;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+    * {
+      font-weight: normal;
+      margin: 0;
+      padding: 0;  
+    }
+
+    li {
+      list-style: none;
+    }
+
+    /* data section header */
+    header {
+    
+      .gantt-hours {
+        overflow: hidden;
+      }
+
+        .gantt-hour {
+          float: left;
+          text-align: center;
+
+          &.closed {
+            background: $color-background-light;
+          }
+
+          strong {
+            display: block;
+            border-right:  1px solid $color-lines;
+            border-bottom: 1px solid $color-lines;
+          }
+        }
+
+      .gantt-hour span {
+        text-indent: 0;
+        text-align: center;
+        border-bottom: 1px solid $color-lines;
+      }
+      .gantt-hour.today span {
+        color: $color-text-today;
+      }
+
+    }
+
+    /* optional title */
+    figcaption {
+      position: absolute;
+      top: 25px;
+      left: 20px;
+      font-size: 20px;
+      color: $color-text-title;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+    }
+
+    /* sidebar */
+    aside {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      top: 0;
+      width: $aside-width - 1;
+      border-right: 1px solid darken($color-lines, 2%);
+      z-index: 2;
+
+      .gantt-labels {
+        border-top: 1px solid $color-lines;
+      }
+
+      .gantt-label strong {
+        display: block;
+        padding: 0 20px;
+        color: $color-text-label-aside;
+        border-bottom: 1px solid $color-lines;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      &:before {
+        position: absolute;
+        right: -7px;
+        pointer-events: none;
+        width: 7px;
+        top: 0;
+        bottom: 0;
+        content: "";
+        border-left: 1px solid rgba(255,255,255, .03);
+        background: -webkit-linear-gradient(left, rgba($color-today,.2), rgba($color-today,0));
+           background: -moz-linear-gradient(left, rgba($color-today,.2), rgba($color-today,0));
+                background: linear-gradient(left, rgba($color-today,.2), rgba($color-today,0));
+        z-index: 3;
+      }
+    }
+  }
 
 /* data section */
-.gantt-data {
-  position: relative;
-  overflow-x: scroll;
-  margin-left: $aside-width;
-  white-space: nowrap;
-}
-
-/* data section header */
-.gantt header .gantt-months {
-  overflow: hidden;
-}
-.gantt header .gantt-month {
-  float: left;
-  text-align: center;
-}
-.gantt header .gantt-month strong {
-  display: block;
-  border-right:  1px solid $color-lines;
-  border-bottom: 1px solid $color-lines;
-}
-
-  .gantt header .gantt-hours {
-    overflow: hidden;
+  .gantt-data {
+    position: relative;
+    overflow-x: scroll;
+    margin-left: $aside-width;
+    white-space: nowrap;
   }
-  .gantt header .gantt-hour {
-    float: left;
-    text-align: center;
-  }
-  .gantt header .gantt-hour strong {
-    display: block;
-    border-right:  1px solid $color-lines;
-    border-bottom: 1px solid $color-lines;
-  }
-
-  .gantt-hour.closed {
-    background: $color-background-light;
-  }
-
-  .gantt header .gantt-hour span {
-    text-indent: 0;
-    text-align: center;
-  }
-  .gantt header .gantt-hour.today span {
-    color: $color-text-today;
-  }
-
-
-.gantt header .gantt-day span {
-  text-indent: 0;
-  text-align: center;
-}
-.gantt header .gantt-day.today span {
-  color: $color-text-today;
-}
 
 /* data items */
-.gantt-item {
-  position: relative;
-}
-.gantt-days {
-  overflow: hidden;
-}
-.gantt-day {
-  float: left;
-}
-.gantt-day, .gantt-hour {
-  span {
-    display: block;
-    border-right:  1px solid $color-lines;
-    border-bottom: 1px solid $color-lines;
-    text-indent: -12000px;
+  .gantt-item {
+    position: relative;
   }
-}
-.gantt-day.weekend span {
-  background: $color-background-light;
-}
+
+    .gantt-hours {
+      overflow: hidden;
+    }
+
+      .gantt-hour {
+        float: left;
+
+        &.closed {
+          background: $color-background-light;
+        }
+
+        span {
+          display: block;
+          border-right:  1px dashed $color-lines;
+          border-bottom: 1px solid transparent;
+        }
+      }
+
+  .gantt-items {
+
+    .gantt-hour {
+
+      &:hover {
+
+        span {
+          font-size: 30px;
+          background: lighten($color-today, 40%);
+        }
+      }
+
+      span {
+        color: white;
+        text-align: center;
+        font-size: 0;
+        font-weight: 700;
+      }
+
+    }
+  }
+
 
 /* data blocks */
-.gantt-block {
-  position: absolute;
-  top: 0;
-  z-index: 1;
-  margin: 4px;
-  border-radius: 3px;
-  -webkit-box-shadow: rgba(0,0,0, .9) 0 2px 6px, rgba(255,255,255, .2) 0 1px 0 inset;
-     -moz-box-shadow: rgba(0,0,0, .9) 0 2px 6px, rgba(255,255,255, .2) 0 1px 0 inset;
-          box-shadow: rgba(0,0,0, .9) 0 2px 6px, rgba(255,255,255, .2) 0 1px 0 inset;
-  opacity: .9;
-}
-.gantt-block-label {
-  display: block;
-  color: $color-text-label-block;
-  padding: 5px 10px;
-}
+  .gantt-block {
+    position: absolute;
+    top: 0;
+    z-index: 1;
+    margin: 4px 0;
+    border-radius: 3px;
+    -webkit-box-shadow: rgba(0,0,0, .9) 0 2px 6px, rgba(255,255,255, .2) 0 1px 0 inset;
+       -moz-box-shadow: rgba(0,0,0, .9) 0 2px 6px, rgba(255,255,255, .2) 0 1px 0 inset;
+            box-shadow: rgba(0,0,0, .9) 0 2px 6px, rgba(255,255,255, .2) 0 1px 0 inset;
+    opacity: .85;
+
+    cursor: pointer;
+    overflow: hidden;
+    -webkit-transition: all .2s ease-in-out;
+  
+    &.break {
+      cursor: default;
+      margin: 0;
+      border-radius: 0;
+
+      -webkit-box-shadow: none;
+         -moz-box-shadow: none;
+              box-shadow: none;
+
+      .gantt-block-label {
+        padding: 0;
+      }
+    }
+
+    &.break:hover {
+      min-width: 0;
+      -webkit-transform: scale(1);
+    }
+
+    &:hover {
+      z-index: 99;
+      min-width: 200px;
+      opacity: 1;
+      -webkit-transform: scale(1.2);
+    }
+
+    &.appointment::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: block;
+      height: 100%;
+      width: 50px;
+
+      background-image: -webkit-gradient(linear, left top, right top, color-stop(0, rgba(38,139,210,0)), color-stop(1, rgba(38,139,210,1)));
+    }
+
+    .gantt-block-label {
+      display: block;
+      color: $color-text-label-block;
+      padding: 5px 10px;
+    }
+  }
+
 
 /* block colors */
-.gantt-block {
-  background: $color-block-default;
-}
-.gantt-block.important {
-  background: $color-block-important;
-}
-.gantt-block.urgent {
-  background: $color-block-urgent;
-}
+  .gantt-block {
+    background: $color-block-default;
+  }
+  .gantt-block.break {
+    text-align: center;
+    background: $color-block-important; 
+  }
+  .gantt-block.important {
+    background: $color-block-important;
+  }
+  .gantt-block.urgent {
+    background: $color-block-urgent;
+  }
 
 /* today sign */
-.gantt time {
-  position: absolute;
-  top: 0;
-  width: 2px;
-  background: $color-today;
-  bottom: 0;
-  z-index: 1000;
-  text-indent: -12000px;
-  -webkit-box-shadow: rgba(0,0,0, .3) 0 0 10px;
-     -moz-box-shadow: rgba(0,0,0, .3) 0 0 10px;
-          box-shadow: rgba(0,0,0, .3) 0 0 10px;
-}
-.gantt time:before {
-  position: absolute;
-  content: "";
-  top: 0;
-  left: -4px;
-  border-left:  5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top:   5px solid $color-today;
-}
-
-/* scrollbar styles */
-.gantt ::-webkit-scrollbar {    
-  background: $color-scrollbar-back;
-  height: 10px;
-}
-.gantt ::-webkit-scrollbar-thumb {
-  background: $color-scrollbar-thumb;
-  -webkit-box-shadow: rgba(255,255,255, .1) 0 1px 0 inset;
-     -moz-box-shadow: rgba(255,255,255, .1) 0 1px 0 inset;
-          box-shadow: rgba(255,255,255, .1) 0 1px 0 inset;
-}
-
-/* selection styles */
-.gantt ::-moz-selection {
-	background: #fff;
-	color: #000;
-}
-.gantt ::selection {
-	background: #fff;
-	color: #000;
-}
+  .gantt time {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    background: $color-today;
+    bottom: 0;
+    z-index: 1000;
+    text-indent: -12000px;
+    -webkit-box-shadow: rgba(0,0,0, .3) 0 0 10px;
+       -moz-box-shadow: rgba(0,0,0, .3) 0 0 10px;
+            box-shadow: rgba(0,0,0, .3) 0 0 10px;
+    
+    &:before {
+      position: absolute;
+      content: "";
+      top: 0;
+      left: -4px;
+      border-left:  5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top:   5px solid $color-today;
+    }
+  }
